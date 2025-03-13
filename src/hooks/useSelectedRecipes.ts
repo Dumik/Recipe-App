@@ -3,6 +3,7 @@ import { Recipe, RecipeResponse } from '../types/recipe';
 import { getRecipeById } from '../api/recipes';
 import { QUERY_KEYS } from '../constants/queryKeys';
 import { CACHE_CONFIG } from '../constants/config';
+import { safeJsonParse, isStringArray } from '../utils/safeJson';
 
 const SELECTED_RECIPES_KEY = 'selectedRecipeIds';
 
@@ -13,7 +14,9 @@ export const useSelectedRecipes = () => {
     queryKey: QUERY_KEYS.SELECTED_RECIPES.ids,
     queryFn: () => {
       const saved = localStorage.getItem(SELECTED_RECIPES_KEY);
-      return saved ? JSON.parse(saved) : [];
+      return saved 
+        ? safeJsonParse(saved, isStringArray, [])
+        : [];
     },
     ...CACHE_CONFIG.INFINITE,
   });
@@ -73,6 +76,7 @@ export const useSelectedRecipes = () => {
   const isSelected = (recipeId: string) => {
     return selectedRecipeIds.includes(recipeId);
   };
+
 
   return {
     selectedRecipes,

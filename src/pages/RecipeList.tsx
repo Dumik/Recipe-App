@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Pagination from '../components/Pagination';
 import { useRecipes } from '../hooks/useRecipes';
 import { useSelectedRecipes } from '../hooks/useSelectedRecipes';
@@ -9,6 +10,7 @@ import SearchPanel from '../components/SearchPanel';
 import RecipeGrid from '../components/RecipeGrid';
 
 const RecipeList = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [searchInput, setSearchInput] = useState('');
   const [debouncedValue, setDebouncedValue] = useState('');
   const { addRecipe, removeRecipe, isSelected } = useSelectedRecipes();
@@ -17,11 +19,6 @@ const RecipeList = () => {
     setDebouncedValue(value);
   }, DEBOUNCE_DELAY);
 
-  const handleSearch = useCallback((value: string) => {
-    setSearchInput(value);
-    debouncedSearch(value);
-  }, [debouncedSearch]);
-  
   const {
     recipes,
     categories,
@@ -34,6 +31,42 @@ const RecipeList = () => {
     handlePageChange
   } = useRecipes(debouncedValue);
 
+  useEffect(() => {
+    const page = searchParams.get('page');
+    if (page) {
+      handlePageChange(parseInt(page, 10));
+    }
+  }, [searchParams, handlePageChange]);
+
+  useEffect(() => {
+    const search = searchParams.get('search');
+    if (search) {
+      setSearchInput(search);
+      setDebouncedValue(search);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    const category = searchParams.get('category');
+    if (category) {
+      handleCategoryChange(category);
+    }
+  }, [searchParams, handleCategoryChange]);
+
+  const handleSearch = useCallback((value: string) => {
+    setSearchInput(value);
+    debouncedSearch(value);
+    setSearchParams(prev => {
+      const newParams = new URLSearchParams(prev);
+      if (value) {
+        newParams.set('search', value);
+      } else {
+        newParams.delete('search');
+      }
+      return newParams;
+    });
+  }, [setSearchParams, debouncedSearch]);
+  
   const handleRecipeSelect = useCallback((recipe: Recipe) => {
     if (isSelected(recipe.idMeal)) {
       removeRecipe(recipe.idMeal);

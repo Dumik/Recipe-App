@@ -1,18 +1,38 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import { getRecipes, getRecipeById } from '../api/recipes';
 import { ITEMS_PER_PAGE, CACHE_CONFIG } from '../constants/config';
 import { QUERY_KEYS } from '../constants/queryKeys';
 import { Recipe, RecipeResponse } from '../types/recipe';
 
 export const useRecipes = (searchQuery: string) => {
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [currentPage, setCurrentPage] = useState(1);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [selectedCategory, setSelectedCategory] = useState<string>(() => {
+    return searchParams.get('category') || '';
+  });
+  
+  const [currentPage, setCurrentPage] = useState(() => {
+    const page = searchParams.get('page');
+    return page ? parseInt(page, 10) : 1;
+  });
+
   const queryClient = useQueryClient();
 
+  const handlePageChange = useCallback((page: number) => {
+    setCurrentPage(page);
+    setSearchParams(prev => {
+      const newParams = new URLSearchParams(prev);
+      newParams.set('page', page.toString());
+      return newParams;
+    });
+  }, [setSearchParams]);
+
   useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, selectedCategory]);
+    if (searchQuery || selectedCategory) {
+      handlePageChange(1);
+    }
+  }, [searchQuery, selectedCategory, handlePageChange]);
 
   const { data, isLoading, error } = useQuery<RecipeResponse>({
     queryKey: QUERY_KEYS.RECIPES.search(searchQuery),
@@ -62,11 +82,16 @@ export const useRecipes = (searchQuery: string) => {
 
   const handleCategoryChange = useCallback((category: string) => {
     setSelectedCategory(category);
-  }, []);
-
-  const handlePageChange = useCallback((page: number) => {
-    setCurrentPage(page);
-  }, []);
+    setSearchParams(prev => {
+      const newParams = new URLSearchParams(prev);
+      if (category) {
+        newParams.set('category', category);
+      } else {
+        newParams.delete('category');
+      }
+      return newParams;
+    });
+  }, [setSearchParams]);
 
   return {
     recipes: paginatedRecipes,

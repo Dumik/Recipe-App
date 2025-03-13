@@ -19,7 +19,24 @@ const persister = createSyncStoragePersister({
   key: 'RECIPE_APP_CACHE',
   throttleTime: 1000,
   serialize: data => JSON.stringify(data),
-  deserialize: data => JSON.parse(data),
+  deserialize: (data) => {
+    try {
+      if (typeof data !== 'string') {
+        throw new Error('Invalid cache data format');
+      }
+
+      const parsed = JSON.parse(data);
+      
+      if (!parsed || typeof parsed !== 'object') {
+        throw new Error('Invalid cache structure');
+      }
+
+      return parsed;
+    } catch (error) {
+      console.error('Failed to parse cache data:', error);
+      return {}; 
+    }
+  },
 });
 
 persistQueryClient({

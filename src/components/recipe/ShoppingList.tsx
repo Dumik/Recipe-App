@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Check } from 'lucide-react';
+import { safeJsonParse, isCheckedItems } from '../../utils/safeJson';
 
 interface Ingredient {
   name: string;
@@ -14,7 +15,9 @@ interface ShoppingListProps {
 const ShoppingList = ({ ingredients }: ShoppingListProps) => {
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>(() => {
     const saved = localStorage.getItem('shopping-list-checked');
-    return saved ? JSON.parse(saved) : {};
+    return saved 
+      ? safeJsonParse(saved, isCheckedItems, {})
+      : {};
   });
 
   useEffect(() => {
