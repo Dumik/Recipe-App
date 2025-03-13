@@ -1,51 +1,78 @@
-import React from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getRecipeById } from '../api/recipes';
+import { QUERY_KEYS } from '../constants/queryKeys';
+import { RecipeResponse } from '../types/recipe';
+import { CACHE_CONFIG } from '../constants/config';
+import { extractIngredients } from '../utils/helpers';
+import RecipeNavigation from '../components/recipe/RecipeNavigation';
+import RecipeHero from '../components/recipe/RecipeHero';
+import RecipeIngredients from '../components/recipe/RecipeIngredients';
+import RecipeInstructions from '../components/recipe/RecipeInstructions';
+import RecipeVideo from '../components/recipe/RecipeVideo';
 
 const RecipeDetails = () => {
-  const { id } = useParams();
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['recipe', id],
-    queryFn: () => getRecipeById(id!)
+  const { id } = useParams<{ id: string }>();
+
+  const { data, isLoading, error } = useQuery<RecipeResponse>({
+    queryKey: QUERY_KEYS.RECIPES.details(id!),
+    queryFn: () => getRecipeById(id!),
+    ...CACHE_CONFIG.SHORT,
   });
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-[70vh]">
+        <div className="text-lg text-gray-600">Loading recipe details...</div>
+      </div>
+    );
   }
 
   if (error) {
-    return <div>Error loading recipe</div>;
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[70vh]">
+        <div className="text-lg text-red-600 mb-4">Error loading recipe</div>
+        <RecipeNavigation />
+      </div>
+    );
   }
 
   const recipe = data?.meals?.[0];
 
   if (!recipe) {
-    return <div>Recipe not found</div>;
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[70vh]">
+        <div className="text-lg mb-4">Recipe not found</div>
+        <RecipeNavigation />
+      </div>
+    );
   }
 
+  const ingredients = extractIngredients(recipe);
+
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h1 className="text-3xl font-bold mb-6">{recipe.strMeal}</h1>
-      <img 
-        src={recipe.strMealThumb} 
-        alt={recipe.strMeal} 
-        className="w-full max-w-2xl rounded-lg mb-6"
+    <div className="max-w-5xl mx-auto px-4 py-8">
+      <RecipeNavigation />
+      
+      <RecipeHero
+        image={recipe.strMealThumb}
+        title={recipe.strMeal}
+        category={recipe.strCategory}
+        area={recipe.strArea}
+        tags={recipe.strTags}
       />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div>
-          <h2 className="text-2xl font-semibold mb-4">Details</h2>
-          <p className="mb-2"><strong>Category:</strong> {recipe.strCategory}</p>
-          <p className="mb-2"><strong>Origin:</strong> {recipe.strArea}</p>
-          {recipe.strTags && (
-            <p className="mb-2"><strong>Tags:</strong> {recipe.strTags}</p>
-          )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-1">
+          <RecipeIngredients ingredients={ingredients} />
         </div>
-        <div>
-          <h2 className="text-2xl font-semibold mb-4">Instructions</h2>
-          <p className="whitespace-pre-line">{recipe.strInstructions}</p>
+
+        <div className="lg:col-span-2">
+          <RecipeInstructions instructions={recipe.strInstructions} />
         </div>
       </div>
+
+      <RecipeVideo videoUrl={recipe.strYoutube} />
     </div>
   );
 };
