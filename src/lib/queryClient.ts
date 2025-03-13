@@ -26,7 +26,7 @@ persistQueryClient({
   queryClient,
   persister,
   maxAge: 1000 * 60 * 60 * 24, // 24 hours
-  buster: 'v1', // Cache version
+  buster: 'v1', 
   dehydrateOptions: {
     shouldDehydrateQuery: query => {
       const queryKey = query.queryKey as string[];
